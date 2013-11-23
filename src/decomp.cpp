@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iomanip>  // std::setw
 #include <stdlib.h> // atoi(), exit()
+#include <time.h> // clock()
 
 #define GRP_SIZE 7
 #define GRP_COUNT 5
@@ -33,15 +34,11 @@ int *progress; // Track how we are faring.
 bool first; // Is this the first time we're printing the progress (in which
             // case, don't scroll up
 
-
-int progress_count; // Printing progress at each step wastes CPU
-const int progress_interval = 300000; // Instead, increment progressCount every time we enter
-// fill(), and only print progress if progressCount % progressInterval == 0
+time_t last_progress;
+const time_t progress_interval = 30*60*CLOCKS_PER_SEC; // Only print progress every "progress_interval"
 
 void print_progress()
 {
-  if (progress_count++ % progress_interval != 0 )
-    return;
   if (!first)
     std::cout << "\033[7F" << std::endl;
   first = FALSE;
@@ -172,7 +169,11 @@ Stack* use(int spot_R, int vert_K, Stack *old)
 void fill(int spot_R, Stack *stack)
 {
 #ifndef QUIET
-  print_progress();
+  if (clock() - last_progress > progress_interval)
+  {
+    last_progress = clock();
+    print_progress();
+  }
   progress[spot_R] = 0;
 #endif
   if (spot_R == k*k)
@@ -198,6 +199,7 @@ void fill(int spot_R, Stack *stack)
 
 Stack* init()
 {
+  last_progress = clock();
   orbit_count = k*k +1  + GRP_COUNT*(GRP_COUNT-1)*GRP_SIZE/2;
   adjacencies = new int[k*k*k*k];
   for (int i_K = 0 ; i_K < k*k; i_K++)
@@ -278,7 +280,6 @@ int main(int argc, char **argv)
 
 #ifndef QUIET
   first = TRUE;
-  progress_count = 0;
   progress = new int[k*k];
 #endif
   prealloc = new bool[k*k];
@@ -314,7 +315,6 @@ int main(int argc, char **argv)
   fill(spot_R, stack);
 
 #ifndef QUIET
-  progress_count = 0;
   print_progress();
 #endif
   return -1; // Did not find decomp.
