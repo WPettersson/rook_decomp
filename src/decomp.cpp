@@ -28,10 +28,72 @@ int *adjacencies; // adjacencies[i*k*k + j] gives the orbit of the edge between
                    // vertices i and j
 
 
-void print_stack(Stack *stack)
+bool *prealloc; // Which vertices were assigned from the command line.
+int *progress; // Track how we are faring.
+bool first; // Is this the first time we're printing the progress (in which
+            // case, don't scroll up
+
+
+int progress_count; // Printing progress at each step wastes CPU
+const int progress_interval = 300000; // Instead, increment progressCount every time we enter
+// fill(), and only print progress if progressCount % progressInterval == 0
+
+void print_progress()
+{
+  if (progress_count++ % progress_interval != 0 )
+    return;
+  if (!first)
+    std::cout << "\033[7F" << std::endl;
+  first = FALSE;
+  for (int i = 0; i < k*k; i++)
+  {
+    if (prealloc[i])
+      std::cout << std::setw(WIDTH) << "  X";
+    else
+      std::cout << std::setw(WIDTH) << progress[i];
+    if (( i > 0 ) && ( i % k ) == k-1 )
+      std::cout << std::endl;
+    else
+      std::cout << " ";
+  }
+}
+
+void print_orbits(Stack *stack)
 {
   for( int i=0; i < orbit_count; i++)
     std::cout << std::setw(WIDTH) << i << ":" << stack->orbits_used[i] << std::endl;
+}
+
+void print_forced(Stack *stack)
+{
+  for( int i=0; i < (k*k); i++)
+  {
+    int v = stack->vertex_alloc[i];
+    if (! prealloc[i])
+    {
+      std::cout << std::setw(WIDTH) << " _ ";
+    }
+    else if (v == 0)
+    {
+      std::cout << std::setw(WIDTH) << " ∞ ";
+    }
+    else
+    {
+      int index = INDEX(v);
+      int grp = GROUP(v);
+      std::cout << grp << "," << index;
+    }
+    if (( i > 0 ) && ( i % k ) == k-1 )
+      std::cout << std::endl;
+    else
+      std::cout << " ";
+  }
+  std::cout << std::endl;
+}
+
+
+void print_stack(Stack *stack)
+{
   for( int i=0; i < (k*k); i++)
   {
     int v = stack->vertex_alloc[i];
@@ -54,6 +116,7 @@ void print_stack(Stack *stack)
 
 void finish(Stack *stack)
 {
+  print_orbits(stack);
   print_stack(stack);
   exit(0);
 }
@@ -79,6 +142,7 @@ Stack* use(int spot_R, int vert_K, Stack *old)
     if (++orbits_used[orbit] > 2)
     {
       delete[] orbits_used;
+      //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
       return NULL;
     }
   }
@@ -89,6 +153,7 @@ Stack* use(int spot_R, int vert_K, Stack *old)
     if (++orbits_used[orbit] > 2)
     {
       delete[] orbits_used;
+      //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
       return NULL;
     }
   }
@@ -106,16 +171,22 @@ Stack* use(int spot_R, int vert_K, Stack *old)
 
 void fill(int spot_R, Stack *stack)
 {
+  print_progress();
   if (spot_R == k*k)
     finish(stack);
+  progress[spot_R] = 0;
   for (int i = 0; i < k*k; i++)
   {
+    progress[spot_R]++;
     if (stack->vertices_used[i])
       continue;
     Stack *newStack = use(spot_R, i, stack);
     if (newStack != NULL)
     {
-      fill(spot_R+1, newStack);
+      int newSpot = spot_R+1;
+      while (prealloc[newSpot])
+        newSpot++; // While loop to find next not-preallocated vertex
+      fill(newSpot, newStack);
       delete newStack;
     }
   }
@@ -123,7 +194,7 @@ void fill(int spot_R, Stack *stack)
 
 Stack* init()
 {
-  orbit_count = k*k + GRP_COUNT*(GRP_COUNT-1)*GRP_SIZE/2;
+  orbit_count = k*k +1  + GRP_COUNT*(GRP_COUNT-1)*GRP_SIZE/2;
   adjacencies = new int[k*k*k*k];
   for (int i_K = 0 ; i_K < k*k; i_K++)
   {
@@ -146,7 +217,7 @@ Stack* init()
       {
         int index_diff = (ind_j - ind_i)%7;
         if (index_diff < 0) index_diff += 7;
-        orbit = k*k-1   // Skip orbits including infinity or inside a group
+        orbit = k*k+1   // Skip orbits including infinity or inside a group
                 + GRP_SIZE*(GRP_COUNT*(grp_i-1) - ((grp_i-1)*(grp_i-1) + (grp_i-1))/2)
                       // Skip orbits from groups before grp_i
                 + (grp_j-grp_i-1)*GRP_SIZE  // Skip orbits from grp_i to groups before grp_j
@@ -195,29 +266,48 @@ int main(int argc, char **argv)
 {
   if (argc < 2)
   {
-    std::cout << "Usage: decomp k [alloc1 [alloc2 ... ]]" << std::endl;
-    std::cout << " where vertex alloc1 will be put in spot 0 and so-on" << std::endl;
+    std::cout << "Usage: decomp k [spot 1 alloc1 [spot 2 alloc2 [ ...] ]]" << std::endl;
+    std::cout << " where vertex alloc1 will be put in spot1 and so-on" << std::endl;
     return 0;
   }
   k = atoi(argv[1]);
 
+  first = TRUE;
+  progress_count = 0;
+  progress = new int[k*k];
+  prealloc = new bool[k*k];
+  for (int i = 0; i < k*k; i++)
+    prealloc[i] = FALSE;
+
   Stack *stack = init();
   int spot_R = 0;
-  for (int i = 2; i < argc; i++) 
+  for (int i = 2; i < argc; i+=2)
   {
-    Stack *newStack = use(spot_R, atoi(argv[i]), stack);
+    int spot = atoi(argv[i]);
+    int vert = atoi(argv[i+1]);
+    Stack *newStack = use(spot, vert, stack);
     if ( newStack == NULL)
     {
+      int grp = GROUP(vert);
+      int ind = INDEX(vert);
       std::cout << "Your allocation failed when putting vert_K " <<
-        atoi(argv[i]) <<
-        " into position_R " << spot_R << std::endl;
+        grp << "," << ind << " into position_R " << spot << std::endl;
+      print_orbits(stack);
+      print_forced(stack);
       return -1;
     }
-    spot_R++;
+    prealloc[spot] = TRUE;
     stack = newStack;
   }
+  std::cout << "Forced allocations" << std::endl;
+  print_forced(stack);
 
+  while (prealloc[++spot_R]) ; // Empty while loop to find next
+                                // not-preallocated vertex
+  std::cout << "Starting at " << spot_R << std::endl;
   fill(spot_R, stack);
 
+  progress_count = 0;
+  print_progress();
   return -1; // Did not find decomp.
 }
