@@ -171,13 +171,17 @@ Stack* use(int spot_R, int vert_K, Stack *old)
 
 void fill(int spot_R, Stack *stack)
 {
+#ifndef QUIET
   print_progress();
+  progress[spot_R] = 0;
+#endif
   if (spot_R == k*k)
     finish(stack);
-  progress[spot_R] = 0;
   for (int i = 0; i < k*k; i++)
   {
+#ifndef QUIET
     progress[spot_R]++;
+#endif
     if (stack->vertices_used[i])
       continue;
     Stack *newStack = use(spot_R, i, stack);
@@ -272,9 +276,11 @@ int main(int argc, char **argv)
   }
   k = atoi(argv[1]);
 
+#ifndef QUIET
   first = TRUE;
   progress_count = 0;
   progress = new int[k*k];
+#endif
   prealloc = new bool[k*k];
   for (int i = 0; i < k*k; i++)
     prealloc[i] = FALSE;
@@ -307,7 +313,9 @@ int main(int argc, char **argv)
   std::cout << "Starting at " << spot_R << std::endl;
   fill(spot_R, stack);
 
+#ifndef QUIET
   progress_count = 0;
   print_progress();
+#endif
   return -1; // Did not find decomp.
 }
