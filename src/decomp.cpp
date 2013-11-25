@@ -40,7 +40,7 @@ const time_t progress_interval = 30*60*CLOCKS_PER_SEC; // Only print progress ev
 void print_progress()
 {
   if (!first)
-    std::cout << "\033[7F" << std::endl;
+    std::cout << "\033[" << (k+1) << "F" << std::endl;
   first = FALSE;
   for (int i = 0; i < k*k; i++)
   {
@@ -217,12 +217,17 @@ Stack* init()
       } 
       else if (grp_i == grp_j) 
       {
-        orbit = grp_i * GRP_SIZE + (ind_j - ind_i);
+        int diff = ind_j - ind_i;
+        if ((diff > GRP_SIZE/2))
+        {
+          diff = GRP_SIZE - diff;
+        }
+        orbit = (grp_i-1) * GRP_SIZE + diff;
       } 
       else
       {
-        int index_diff = (ind_j - ind_i)%7;
-        if (index_diff < 0) index_diff += 7;
+        int index_diff = (ind_j - ind_i)%GRP_SIZE;
+        if (index_diff < 0) index_diff += GRP_SIZE;
         orbit = k*k+1   // Skip orbits including infinity or inside a group
                 + GRP_SIZE*(GRP_COUNT*(grp_i-1) - ((grp_i-1)*(grp_i-1) + (grp_i-1))/2)
                       // Skip orbits from groups before grp_i
