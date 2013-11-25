@@ -5,6 +5,7 @@
 #include <iomanip>  // std::setw
 #include <stdlib.h> // atoi(), exit()
 #include <time.h> // clock()
+#include <cstring> // strcmp()
 
 #define GRP_SIZE 7
 #define GRP_COUNT 5
@@ -28,6 +29,7 @@ int k; // Rook graph is R_{k,k}
 int *adjacencies; // adjacencies[i*k*k + j] gives the orbit of the edge between
                    // vertices i and j
 
+int count; // Count how many such decompositions we find
 
 bool *prealloc; // Which vertices were assigned from the command line.
 int *progress; // Track how we are faring.
@@ -113,9 +115,14 @@ void print_stack(Stack *stack)
 
 void finish(Stack *stack)
 {
-  print_orbits(stack);
+  count+=1;
+  //print_orbits(stack);
   print_stack(stack);
-  exit(0);
+
+  // Only exit if count = 0, which means we are not looking for all
+  if (count == 0)
+    exit(0);
+  return;
 }
 
 // Attempts to place vert_K in spot_R, using Stack *old.
@@ -277,11 +284,19 @@ int main(int argc, char **argv)
 {
   if (argc < 2)
   {
-    std::cout << "Usage: decomp k [spot 1 alloc1 [spot 2 alloc2 [ ...] ]]" << std::endl;
+    std::cout << "Usage: decomp k [-a] [spot 1 alloc1 [spot 2 alloc2 [ ...] ]]" << std::endl;
     std::cout << " where vertex alloc1 will be put in spot1 and so-on" << std::endl;
+    std::cout << " [-a] indicates that the program should attempt to find " << std::endl;
+    std::cout << " all such decompositions, and count them." << std::endl;
     return 0;
   }
   k = atoi(argv[1]);
+  if ((argc >= 3) && ( strcmp("-a", argv[2])==0))
+  {
+    count = 0;
+  }
+  else
+    count = -1; // -1 indicates that we should exit on finding one.
 
 #ifndef QUIET
   first = TRUE;
@@ -293,7 +308,8 @@ int main(int argc, char **argv)
 
   Stack *stack = init();
   int spot_R = 0;
-  for (int i = 2; i < argc; i+=2)
+  for (int i = 3 + count; i < argc; i+=2) // Note that count is 0 if "-a" is
+    // passed in, and -1 otherwise, so this starts at the right spot
   {
     int spot = atoi(argv[i]);
     int vert = atoi(argv[i+1]);
@@ -316,11 +332,12 @@ int main(int argc, char **argv)
 
   while (prealloc[++spot_R]) ; // Empty while loop to find next
                                 // not-preallocated vertex
-  std::cout << "Starting at " << spot_R << std::endl;
+  //std::cout << "Starting at " << spot_R << std::endl;
   fill(spot_R, stack);
 
 #ifndef QUIET
   print_progress();
 #endif
+  std::cout << "Found " << count << " decompositions." << std::endl;
   return -1; // Did not find decomp.
 }
