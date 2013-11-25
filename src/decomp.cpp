@@ -195,6 +195,7 @@ void fill(int spot_R, Stack *stack)
     Stack *newStack = use(spot_R, i, stack);
     if (newStack != NULL)
     {
+      //std::cout << "Put " << GROUP(i) << "," << INDEX(i) << " into " << spot_R << std::endl;
       int newSpot = spot_R+1;
       while (prealloc[newSpot])
         newSpot++; // While loop to find next not-preallocated vertex
