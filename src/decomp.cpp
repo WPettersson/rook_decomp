@@ -7,11 +7,6 @@
 #include <time.h> // clock()
 #include <cstring> // strcmp()
 
-#define GRP_SIZE 7
-#define GRP_COUNT 5
-#define GROUP(i) (((i + (GRP_SIZE-1)) / GRP_SIZE))
-#define INDEX(i) (( (i % GRP_SIZE)==0 ? GRP_SIZE : (i%GRP_SIZE)))
-
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -25,6 +20,8 @@ int orbit_count;
 const int WIDTH = 3;
 
 int k; // Rook graph is R_{k,k}
+int grp_size;
+int grp_count;
 
 int *adjacencies; // adjacencies[i*k*k + j] gives the orbit of the edge between
                    // vertices i and j
@@ -38,6 +35,16 @@ bool first; // Is this the first time we're printing the progress (in which
 
 time_t last_progress;
 const time_t progress_interval = 30*60*CLOCKS_PER_SEC; // Only print progress every "progress_interval"
+
+inline int group(int i)
+{
+  return (i + grp_size-1)/grp_size;
+}
+
+inline int index(int i)
+{
+  return ( (i % grp_size == 0) ? grp_size: i % grp_size);
+}
 
 void print_progress()
 {
@@ -78,9 +85,9 @@ void print_forced(Stack *stack)
     }
     else
     {
-      int index = INDEX(v);
-      int grp = GROUP(v);
-      std::cout << grp << "," << index;
+      int ind = index(v);
+      int grp = group(v);
+      std::cout << grp << "," << ind;
     }
     if (( i > 0 ) && ( i % k ) == k-1 )
       std::cout << std::endl;
@@ -100,9 +107,9 @@ void print_stack(Stack *stack)
     {
       std::cout << std::setw(WIDTH) << " ∞ ";
     } else {
-      int index = INDEX(v);
-      int grp = GROUP(v);
-      std::cout << grp << "," << index;
+      int ind = index(v);
+      int grp = group(v);
+      std::cout << grp << "," << ind;
     }
     if (( i > 0 ) && ( i % k ) == k-1 )
       std::cout << std::endl;
@@ -195,7 +202,7 @@ void fill(int spot_R, Stack *stack)
     Stack *newStack = use(spot_R, i, stack);
     if (newStack != NULL)
     {
-      //std::cout << "Put " << GROUP(i) << "," << INDEX(i) << " into " << spot_R << std::endl;
+      //std::cout << "Put " << group(i) << "," << index(i) << " into " << spot_R << std::endl;
       int newSpot = spot_R+1;
       while (prealloc[newSpot])
         newSpot++; // While loop to find next not-preallocated vertex
@@ -208,38 +215,40 @@ void fill(int spot_R, Stack *stack)
 Stack* init()
 {
   last_progress = clock();
-  orbit_count = k*k +1  + GRP_COUNT*(GRP_COUNT-1)*GRP_SIZE/2;
+  grp_size = k + 1;
+  grp_count = k - 1;
+  orbit_count = k*k +1  + grp_count*(grp_count-1)*grp_size/2;
   adjacencies = new int[k*k*k*k];
   for (int i_K = 0 ; i_K < k*k; i_K++)
   {
     for (int j_K = i_K+1 ; j_K < k*k; j_K++)
     {
-      int grp_i = GROUP(i_K);
-      int grp_j = GROUP(j_K);
-      int ind_i = INDEX(i_K);
-      int ind_j = INDEX(j_K);
+      int grp_i = group(i_K);
+      int grp_j = group(j_K);
+      int ind_i = index(i_K);
+      int ind_j = index(j_K);
       int orbit;
       if (i_K == 0)
       {
-        orbit = grp_j * GRP_SIZE;;
+        orbit = grp_j * grp_size;;
       } 
       else if (grp_i == grp_j) 
       {
         int diff = ind_j - ind_i;
-        if ((diff > GRP_SIZE/2))
+        if ((diff > grp_size/2))
         {
-          diff = GRP_SIZE - diff;
+          diff = grp_size - diff;
         }
-        orbit = (grp_i-1) * GRP_SIZE + diff;
+        orbit = (grp_i-1) * grp_size + diff;
       } 
       else
       {
-        int index_diff = (ind_j - ind_i)%GRP_SIZE;
-        if (index_diff < 0) index_diff += GRP_SIZE;
+        int index_diff = (ind_j - ind_i)%grp_size;
+        if (index_diff < 0) index_diff += grp_size;
         orbit = k*k+1   // Skip orbits including infinity or inside a group
-                + GRP_SIZE*(GRP_COUNT*(grp_i-1) - ((grp_i-1)*(grp_i-1) + (grp_i-1))/2)
+                + grp_size*(grp_count*(grp_i-1) - ((grp_i-1)*(grp_i-1) + (grp_i-1))/2)
                       // Skip orbits from groups before grp_i
-                + (grp_j-grp_i-1)*GRP_SIZE  // Skip orbits from grp_i to groups before grp_j
+                + (grp_j-grp_i-1)*grp_size  // Skip orbits from grp_i to groups before grp_j
                 + index_diff; // Find right orbit
       }
       //std::cout << "Orbit between " << std::setw(3) << i_K << " and " <<
@@ -317,8 +326,8 @@ int main(int argc, char **argv)
     Stack *newStack = use(spot, vert, stack);
     if ( newStack == NULL)
     {
-      int grp = GROUP(vert);
-      int ind = INDEX(vert);
+      int grp = group(vert);
+      int ind = index(vert);
       std::cout << "Your allocation failed when putting vert_K " <<
         grp << "," << ind << " into position_R " << spot << std::endl;
       print_orbits(stack);
