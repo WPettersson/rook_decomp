@@ -7,14 +7,6 @@
 #include <ctime> // clock()
 #include <cstring> // strcmp()
 
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-#ifndef FALSE
-#define FALSE 0
-#endif
-
 int orbit_count;
 
 const int WIDTH = 3;
@@ -50,7 +42,7 @@ void print_progress()
 {
   if (!first)
     std::cout << "\033[" << (k+1) << "F" << std::endl;
-  first = FALSE;
+  first = false;
   for (int i = 0; i < k*k; i++)
   {
     if (prealloc[i])
@@ -174,7 +166,7 @@ Stack* use(int spot_R, int vert_K, Stack *old)
   
   bool *vertices_used= new bool[k*k];
   std::copy(old->vertices_used, old->vertices_used + k*k, vertices_used);
-  vertices_used[vert_K] = TRUE;
+  vertices_used[vert_K] = true;
 
   return new Stack(orbits_used, vertices_used, vertex_alloc);
 }
@@ -281,7 +273,7 @@ Stack* init()
 
   for( int i=0; i< k*k; i++)
   {
-    vertices_used[i] = FALSE;
+    vertices_used[i] = false;
   }
   for (int i=0; i < orbit_count; i++)
     orbits_used[i] = 0;
@@ -309,12 +301,12 @@ int main(int argc, char **argv)
     count = -1; // -1 indicates that we should exit on finding one.
 
 #ifndef QUIET
-  first = TRUE;
+  first = true;
   progress = new int[k*k];
 #endif
   prealloc = new bool[k*k];
   for (int i = 0; i < k*k; i++)
-    prealloc[i] = FALSE;
+    prealloc[i] = false;
 
   Stack *stack = init();
   int spot_R = 0;
@@ -334,7 +326,7 @@ int main(int argc, char **argv)
       print_forced(stack);
       return -1;
     }
-    prealloc[spot] = TRUE;
+    prealloc[spot] = true;
     stack = newStack;
   }
   std::cout << "Forced allocations" << std::endl;
