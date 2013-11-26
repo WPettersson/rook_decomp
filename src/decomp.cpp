@@ -3,8 +3,8 @@
 #include <algorithm> // std::copy
 #include <iostream>
 #include <iomanip>  // std::setw
-#include <stdlib.h> // atoi(), exit()
-#include <time.h> // clock()
+#include <cstdlib> // atoi(), exit()
+#include <ctime> // clock()
 #include <cstring> // strcmp()
 
 #ifndef TRUE
