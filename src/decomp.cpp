@@ -187,7 +187,7 @@ void fill(int spot_R, Stack *stack)
   for (int i = 0; i < k*k; i++)
   {
 #ifndef QUIET
-    progress[spot_R]++;
+    progress[spot_R]=i;
 #endif
     if (stack->vertices_used[i])
       continue;
