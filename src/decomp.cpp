@@ -121,6 +121,10 @@ void finish(Stack *stack)
   // Only exit if count = 0, which means we are not looking for all
   if (count == 0)
     exit(0);
+
+  // If we aren't exiting, set first to true so that progress prints
+  // don't overwrite the outputs
+  first = true;
   return;
 }
 
@@ -417,6 +421,7 @@ int main(int argc, char **argv)
 #ifndef QUIET
   print_progress();
 #endif
-  std::cout << "Found " << count << " decompositions." << std::endl;
+  if (count > 1)
+    std::cout << "Found " << count << " decompositions." << std::endl;
   return -1; // Did not find decomp.
 }
