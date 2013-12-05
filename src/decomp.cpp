@@ -121,6 +121,10 @@ void finish(Stack *stack)
   // Only exit if count = 0, which means we are not looking for all
   if (count == 0)
     exit(0);
+
+  // If we aren't exiting, set first to true so that progress prints
+  // don't overwrite the outputs
+  first = true;
   return;
 }
 
