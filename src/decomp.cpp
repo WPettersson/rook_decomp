@@ -346,6 +346,7 @@ int main(int argc, char **argv)
 #ifndef QUIET
   print_progress();
 #endif
-  std::cout << "Found " << count << " decompositions." << std::endl;
+  if (count > 1)
+    std::cout << "Found " << count << " decompositions." << std::endl;
   return -1; // Did not find decomp.
 }
