@@ -138,12 +138,14 @@ Stack* use(int spot_R, int vert_K, Stack *old)
   // Use old vertex_alloc for now.
   int *vertex_alloc = old->vertex_alloc;
 
-  int above_R = spot_R % k;
-  int left_R = spot_R - above_R;
-  for (int j_R = above_R; j_R < spot_R; j_R+=k)
+  int col = spot_R % k;
+  int row = (spot_R - col) / k;
+  int vert_to_check;
+  int orbit;
+  if (col > 0) // Check to left
   {
-    int nextVert_K = vertex_alloc[j_R];
-    int orbit = adjacencies[vert_K*k*k + nextVert_K];
+    vert_to_check = vertex_alloc[spot_R - 1];
+    orbit = adjacencies[vert_K*k*k + vert_to_check];
     if (++orbits_used[orbit] > 2)
     {
       delete[] orbits_used;
@@ -151,10 +153,10 @@ Stack* use(int spot_R, int vert_K, Stack *old)
       return NULL;
     }
   }
-  for (int j_R = left_R; j_R < spot_R; j_R++)
+  if (col == k-1) // Check wrap around if at last column
   {
-    int nextVert_K = vertex_alloc[j_R];
-    int orbit = adjacencies[vert_K*k*k + nextVert_K];
+    vert_to_check = vertex_alloc[spot_R - k + 1];
+    orbit = adjacencies[vert_K*k*k + vert_to_check];
     if (++orbits_used[orbit] > 2)
     {
       delete[] orbits_used;
@@ -162,6 +164,79 @@ Stack* use(int spot_R, int vert_K, Stack *old)
       return NULL;
     }
   }
+
+  if (row > 0) // Check above, and above-left.
+  {
+    // Above
+    vert_to_check = vertex_alloc[spot_R - k];
+    orbit = adjacencies[vert_K*k*k + vert_to_check];
+    if (++orbits_used[orbit] > 2)
+    {
+      delete[] orbits_used;
+      //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+      return NULL;
+    }
+    if (col == 0) // Above-left is above and far-right
+      vert_to_check = vertex_alloc[spot_R - 1];
+    else // Above-left is just above-left.
+      vert_to_check = vertex_alloc[spot_R - k - 1];
+    orbit = adjacencies[vert_K*k*k + vert_to_check];
+    if (++orbits_used[orbit] > 2)
+    {
+      delete[] orbits_used;
+      //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+      return NULL;
+    }
+  }
+  if (row == k-1) // Check bottom-to-top, and bottom-to-top-and-left
+  {
+    // Bottom-to-top
+    vert_to_check = vertex_alloc[col];
+    orbit = adjacencies[vert_K*k*k + vert_to_check];
+    if (++orbits_used[orbit] > 2)
+    {
+      delete[] orbits_used;
+      //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+      return NULL;
+    }
+    // Bottom-to-top-and-left
+    if (col == 0) // Top-and-above-left is top and far-right
+      vert_to_check = vertex_alloc[k - 1];
+    else // Top-and-above-left is just top-and-above-left.
+      vert_to_check = vertex_alloc[col - 1];
+    orbit = adjacencies[vert_K*k*k + vert_to_check];
+    if (++orbits_used[orbit] > 2)
+    {
+      delete[] orbits_used;
+      //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+      return NULL;
+    }
+  }
+
+//  int above_R = spot_R % k;
+//  int left_R = spot_R - above_R;
+//  for (int j_R = above_R; j_R < spot_R; j_R+=k)
+//  {
+//    int nextVert_K = vertex_alloc[j_R];
+//    int orbit = adjacencies[vert_K*k*k + nextVert_K];
+//    if (++orbits_used[orbit] > 2)
+//    {
+//      delete[] orbits_used;
+//      //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+//      return NULL;
+//    }
+//  }
+//  for (int j_R = left_R; j_R < spot_R; j_R++)
+//  {
+//    int nextVert_K = vertex_alloc[j_R];
+//    int orbit = adjacencies[vert_K*k*k + nextVert_K];
+//    if (++orbits_used[orbit] > 2)
+//    {
+//      delete[] orbits_used;
+//      //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+//      return NULL;
+//    }
+//  }
   vertex_alloc = new int[k*k];
   std::copy(old->vertex_alloc, old->vertex_alloc + (k*k), vertex_alloc);
   vertex_alloc[spot_R] = vert_K;
