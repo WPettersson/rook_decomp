@@ -129,6 +129,8 @@ void finish(Stack *stack)
 // Returns NULL if this vertex cannot be placed here.
 Stack* use(int spot_R, int vert_K, Stack *old)
 {
+  if (old->vertices_used[vert_K])
+    return NULL;
   // Create new orbits_used
   int *orbits_used = new int[orbit_count];
   std::copy(old->orbits_used, old->orbits_used + orbit_count, orbits_used);
