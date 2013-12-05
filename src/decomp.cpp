@@ -343,9 +343,6 @@ int main(int argc, char **argv)
   //std::cout << "Starting at " << spot_R << std::endl;
   fill(spot_R, stack);
 
-#ifndef QUIET
-  print_progress();
-#endif
   if (count > 1)
     std::cout << "Found " << count << " decompositions." << std::endl;
   return -1; // Did not find decomp.
