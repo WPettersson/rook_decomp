@@ -324,7 +324,7 @@ int main(int argc, char **argv)
       int ind = index(vert);
       std::cout << "Your allocation failed when putting vert_K " <<
         grp << "," << ind << " into position_R " << spot << std::endl;
-      print_orbits(stack);
+      //print_orbits(stack);
       print_forced(stack);
       return -1;
     }
