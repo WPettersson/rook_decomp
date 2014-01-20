@@ -27,7 +27,14 @@ bool first; // Is this the first time we're printing the progress (in which
 
 enum style_t { ROOK, SHRIKHANDE };
 
+enum pattern_t { SNAKE, ROW_COLUMN };
+
+enum direction_t {DOWN, RIGHT};
+
 style_t style;
+pattern_t pattern;
+
+direction_t direction;
 
 time_t last_progress;
 const time_t progress_interval = 30*60*CLOCKS_PER_SEC; // Only print progress every "progress_interval"
@@ -264,6 +271,7 @@ Stack* use(int spot_R, int vert_K, Stack *old)
 
 void fill(int spot_R, Stack *stack)
 {
+  direction_t old_direction = direction;
 #ifndef QUIET
   if (clock() - last_progress > progress_interval)
   {
@@ -272,26 +280,62 @@ void fill(int spot_R, Stack *stack)
   }
   progress[spot_R] = 0;
 #endif
-  if (spot_R == k*k)
+  if (spot_R >= k*k) // If direction == DOWN we might go well past k*k
     finish(stack);
   for (int i = 0; i < k*k; i++)
   {
 #ifndef QUIET
     progress[spot_R]=i;
 #endif
+    direction = old_direction;
     if (stack->vertices_used[i])
       continue;
-    Stack *newStack = use(spot_R, i, stack);
-    if (newStack != NULL)
+    Stack *new_stack = use(spot_R, i, stack);
+    if (new_stack != NULL)
     {
       //std::cout << "Put " << group(i) << "," << index(i) << " into " << spot_R << std::endl;
-      int newSpot = spot_R+1;
-      while (prealloc[newSpot])
-        newSpot++; // While loop to find next not-preallocated vertex
-      fill(newSpot, newStack);
-      delete newStack;
+      int new_spot = 0;
+      if (direction == RIGHT)
+      {
+        new_spot = spot_R+1;
+        if (pattern == ROW_COLUMN)
+        {
+          if (new_spot % k == 0)
+          {
+            // New row. Find first gap, and set direction = down
+            direction = DOWN;
+            while (prealloc[new_spot] || stack->vertex_alloc[new_spot] != 0)
+              new_spot++;
+          }
+        }
+      }
+      else if (direction == DOWN)
+      {
+        new_spot = spot_R+k;
+        if (new_spot >= k*k)
+        {
+          new_spot = (spot_R % k + 1);
+          // New column. Find first gap, and set direction = left
+          // Note no need to check pattern currently, as only one pattern ever
+          // sets direction == DOWN.
+          direction = RIGHT;
+          while (prealloc[new_spot] || stack->vertex_alloc[new_spot] != 0)
+            new_spot+=k;
+        }
+      }
+      // Should never happen
+      if (new_spot == 0)
+        return;
+
+      while (prealloc[new_spot])
+        new_spot++; // While loop to find next not-preallocated vertex
+      fill(new_spot, new_stack);
+      delete new_stack;
     }
   }
+  direction = old_direction;
+  stack->vertex_alloc[spot_R] = 0;
+  progress[spot_R] = 0;
 }
 
 Stack* init()
@@ -364,6 +408,7 @@ Stack* init()
   for( int i=0; i< k*k; i++)
   {
     vertices_used[i] = false;
+    vertex_alloc[i] = 0;
   }
   for (int i=0; i < orbit_count; i++)
     orbits_used[i] = 0;
@@ -386,6 +431,8 @@ int main(int argc, char **argv)
   }
   k = atoi(argv[1]);
   style = ROOK;
+  direction = RIGHT;
+  pattern = SNAKE;
   count = -1; // -1 indicates that we should exit on finding one.
 
   while ((arg_counter < argc) && (argv[arg_counter][0] == '-'))
@@ -397,6 +444,10 @@ int main(int argc, char **argv)
     if ( strcmp("-s", argv[arg_counter])==0)
     {
       style = SHRIKHANDE;
+    }
+    if ( strcmp("-r", argv[arg_counter])==0)
+    {
+      pattern = ROW_COLUMN;
     }
     arg_counter++;
   }
@@ -415,8 +466,8 @@ int main(int argc, char **argv)
   {
     int spot = atoi(argv[i]);
     int vert = atoi(argv[i+1]);
-    Stack *newStack = use(spot, vert, stack);
-    if ( newStack == NULL)
+    Stack *new_stack = use(spot, vert, stack);
+    if ( new_stack == NULL)
     {
       int grp = group(vert);
       int ind = index(vert);
@@ -427,7 +478,7 @@ int main(int argc, char **argv)
       return -1;
     }
     prealloc[spot] = true;
-    stack = newStack;
+    stack = new_stack;
   }
   std::cout << "Forced allocations" << std::endl;
   print_forced(stack);
