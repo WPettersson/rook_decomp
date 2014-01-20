@@ -281,15 +281,15 @@ void fill(int spot_R, Stack *stack)
 #endif
     if (stack->vertices_used[i])
       continue;
-    Stack *newStack = use(spot_R, i, stack);
-    if (newStack != NULL)
+    Stack *new_stack = use(spot_R, i, stack);
+    if (new_stack != NULL)
     {
       //std::cout << "Put " << group(i) << "," << index(i) << " into " << spot_R << std::endl;
-      int newSpot = spot_R+1;
-      while (prealloc[newSpot])
-        newSpot++; // While loop to find next not-preallocated vertex
-      fill(newSpot, newStack);
-      delete newStack;
+      int new_spot = spot_R+1;
+      while (prealloc[new_spot])
+        new_spot++; // While loop to find next not-preallocated vertex
+      fill(new_spot, new_stack);
+      delete new_stack;
     }
   }
 }
@@ -415,8 +415,8 @@ int main(int argc, char **argv)
   {
     int spot = atoi(argv[i]);
     int vert = atoi(argv[i+1]);
-    Stack *newStack = use(spot, vert, stack);
-    if ( newStack == NULL)
+    Stack *new_stack = use(spot, vert, stack);
+    if ( new_stack == NULL)
     {
       int grp = group(vert);
       int ind = index(vert);
@@ -427,7 +427,7 @@ int main(int argc, char **argv)
       return -1;
     }
     prealloc[spot] = true;
-    stack = newStack;
+    stack = new_stack;
   }
   std::cout << "Forced allocations" << std::endl;
   print_forced(stack);
