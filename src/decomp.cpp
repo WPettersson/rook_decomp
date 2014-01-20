@@ -313,7 +313,7 @@ Stack* init()
       if (i_K == 0)
       {
         orbit = grp_j * grp_size;;
-      } 
+      }
       else if (grp_i == grp_j) 
       {
         int diff = ind_j - ind_i;
@@ -322,7 +322,7 @@ Stack* init()
           diff = grp_size - diff;
         }
         orbit = (grp_i-1) * grp_size + diff;
-      } 
+      }
       else
       {
         int index_diff = (ind_j - ind_i)%grp_size;
