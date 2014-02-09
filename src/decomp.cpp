@@ -132,19 +132,21 @@ void finish(Stack *stack)
   return;
 }
 
-// Attempts to place vert_K in spot_R, using Stack *old.
-// Returns a new Stack ptr if successful
+// Attempts to place vert_K in spot_R, using Stack *s.
+// Operations done in-place to *s.
 // Returns NULL if this vertex cannot be placed here.
-Stack* use(int spot_R, int vert_K, Stack *old)
+// Else returns an array use[] of length use[0]+1 listing
+// orbits that were used.
+int* use(int spot_R, int vert_K, Stack *s)
 {
-  if (old->vertices_used[vert_K])
+  if (s->vertices_used[vert_K])
     return NULL;
-  // Create new orbits_used
-  int *orbits_used = new int[orbit_count];
-  std::copy(old->orbits_used, old->orbits_used + orbit_count, orbits_used);
 
-  // Use old vertex_alloc for now.
-  int *vertex_alloc = old->vertex_alloc;
+  //std::cout << "spot_R, vert_K : " << spot_R << ", " << vert_K << std::endl;
+  int *orbits_added = new int[2*(k-1)+1];
+  orbits_added[0] = 0;
+  int *orbits_used = s->orbits_used;
+  int *vertex_alloc = s->vertex_alloc;
 
   int col = spot_R % k;
   int row = (spot_R - col) / k;
@@ -158,10 +160,17 @@ Stack* use(int spot_R, int vert_K, Stack *old)
       orbit = adjacencies[vert_K*k*k + vert_to_check];
       if (++orbits_used[orbit] > 2)
       {
-        delete[] orbits_used;
-        //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+        orbits_used[orbit]--;
+        while( orbits_added[0] > 0)
+        {
+          orbits_used[orbits_added[orbits_added[0]]]--;
+          orbits_added[0]--;
+        }
+        delete[] orbits_added;
         return NULL;
       }
+      orbits_added[0]++;
+      orbits_added[orbits_added[0]] = orbit;
     }
     if (col == k-1) // Check wrap around if at last column
     {
@@ -169,10 +178,18 @@ Stack* use(int spot_R, int vert_K, Stack *old)
       orbit = adjacencies[vert_K*k*k + vert_to_check];
       if (++orbits_used[orbit] > 2)
       {
-        delete[] orbits_used;
+        orbits_used[orbit]--;
+        while( orbits_added[0] > 0)
+        {
+          orbits_used[orbits_added[orbits_added[0]]]--;
+          orbits_added[0]--;
+        }
+        delete[] orbits_added;
         //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
         return NULL;
       }
+      orbits_added[0]++;
+      orbits_added[orbits_added[0]] = orbit;
     }
 
     if (row > 0) // Check above, and above-left.
@@ -182,10 +199,17 @@ Stack* use(int spot_R, int vert_K, Stack *old)
       orbit = adjacencies[vert_K*k*k + vert_to_check];
       if (++orbits_used[orbit] > 2)
       {
-        delete[] orbits_used;
-        //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+        orbits_used[orbit]--;
+        while( orbits_added[0] > 0)
+        {
+          orbits_used[orbits_added[orbits_added[0]]]--;
+          orbits_added[0]--;
+        }
+        delete[] orbits_added;
         return NULL;
       }
+      orbits_added[0]++;
+      orbits_added[orbits_added[0]] = orbit;
       if (col == 0) // Above-left is above and far-right
         vert_to_check = vertex_alloc[spot_R - 1];
       else // Above-left is just above-left.
@@ -193,10 +217,17 @@ Stack* use(int spot_R, int vert_K, Stack *old)
       orbit = adjacencies[vert_K*k*k + vert_to_check];
       if (++orbits_used[orbit] > 2)
       {
-        delete[] orbits_used;
-        //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+        orbits_used[orbit]--;
+        while( orbits_added[0] > 0)
+        {
+          orbits_used[orbits_added[orbits_added[0]]]--;
+          orbits_added[0]--;
+        }
+        delete[] orbits_added;
         return NULL;
       }
+      orbits_added[0]++;
+      orbits_added[orbits_added[0]] = orbit;
     }
     if (row == k-1) // Check bottom-to-top, and bottom-to-top-and-left
     {
@@ -205,10 +236,17 @@ Stack* use(int spot_R, int vert_K, Stack *old)
       orbit = adjacencies[vert_K*k*k + vert_to_check];
       if (++orbits_used[orbit] > 2)
       {
-        delete[] orbits_used;
-        //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+        orbits_used[orbit]--;
+        while( orbits_added[0] > 0)
+        {
+          orbits_used[orbits_added[orbits_added[0]]]--;
+          orbits_added[0]--;
+        }
+        delete[] orbits_added;
         return NULL;
       }
+      orbits_added[0]++;
+      orbits_added[orbits_added[0]] = orbit;
       // Bottom-to-top-and-left
       if (col == 0) // Top-and-above-left is top and far-right
         vert_to_check = vertex_alloc[k - 1];
@@ -217,10 +255,17 @@ Stack* use(int spot_R, int vert_K, Stack *old)
       orbit = adjacencies[vert_K*k*k + vert_to_check];
       if (++orbits_used[orbit] > 2)
       {
-        delete[] orbits_used;
-        //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+        orbits_used[orbit]--;
+        while( orbits_added[0] > 0)
+        {
+          orbits_used[orbits_added[orbits_added[0]]]--;
+          orbits_added[0]--;
+        }
+        delete[] orbits_added;
         return NULL;
       }
+      orbits_added[0]++;
+      orbits_added[orbits_added[0]] = orbit;
     }
   }
   else // ROOK
@@ -231,12 +276,20 @@ Stack* use(int spot_R, int vert_K, Stack *old)
     {
       int nextVert_K = vertex_alloc[j_R];
       int orbit = adjacencies[vert_K*k*k + nextVert_K];
-      if (++orbits_used[orbit] > 2)
+      orbits_used[orbit]++;
+      if (orbits_used[orbit] > 2)
       {
-        delete[] orbits_used;
-        //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+        orbits_used[orbit]--;
+        while( orbits_added[0] > 0)
+        {
+          orbits_used[orbits_added[orbits_added[0]]]--;
+          orbits_added[0]--;
+        }
+        delete[] orbits_added;
         return NULL;
       }
+      orbits_added[0]++;
+      orbits_added[orbits_added[0]] = orbit;
     }
     for (int j_R = left_R; j_R < spot_R; j_R++)
     {
@@ -244,26 +297,43 @@ Stack* use(int spot_R, int vert_K, Stack *old)
       int orbit = adjacencies[vert_K*k*k + nextVert_K];
       if (++orbits_used[orbit] > 2)
       {
-        delete[] orbits_used;
-        //std::cout << "Orbit " << orbit << " used too many times" << std::endl;
+        orbits_used[orbit]--;
+        while( orbits_added[0] > 0)
+        {
+          orbits_used[orbits_added[orbits_added[0]]]--;
+          orbits_added[0]--;
+        }
+        delete[] orbits_added;
         return NULL;
       }
+      orbits_added[0]++;
+      orbits_added[orbits_added[0]] = orbit;
     }
   }
-  vertex_alloc = new int[k*k];
-  std::copy(old->vertex_alloc, old->vertex_alloc + (k*k), vertex_alloc);
+
+  //std::cout << "Put " << vert_K << " into " << spot_R << std::endl;
+  //print_stack(s);
   vertex_alloc[spot_R] = vert_K;
+  s->vertices_used[vert_K] = true;
 
-  bool *vertices_used= new bool[k*k];
-  std::copy(old->vertices_used, old->vertices_used + k*k, vertices_used);
-  vertices_used[vert_K] = true;
-
-  return new Stack(orbits_used, vertices_used, vertex_alloc);
+  return orbits_added;
 }
 
+void unUse(int* orbits_added, Stack *s, int spot_R, int vert_K)
+{
+  s->vertices_used[vert_K] = false;
+  s->vertex_alloc[spot_R] = 0;
+  while( orbits_added[0] > 0)
+  {
+    s->orbits_used[orbits_added[orbits_added[0]]]--;
+    orbits_added[0]--;
+  }
+  delete[] orbits_added;
+}
 
 void fill(int spot_R, Stack *stack)
 {
+  int *orbits_used;
 #ifndef QUIET
   if (clock() - last_progress > progress_interval)
   {
@@ -281,15 +351,15 @@ void fill(int spot_R, Stack *stack)
 #endif
     if (stack->vertices_used[i])
       continue;
-    Stack *newStack = use(spot_R, i, stack);
-    if (newStack != NULL)
+    orbits_used = use(spot_R, i, stack);
+    if (orbits_used != NULL)
     {
       //std::cout << "Put " << group(i) << "," << index(i) << " into " << spot_R << std::endl;
       int newSpot = spot_R+1;
       while (prealloc[newSpot])
         newSpot++; // While loop to find next not-preallocated vertex
-      fill(newSpot, newStack);
-      delete newStack;
+      fill(newSpot, stack);
+      unUse(orbits_used, stack, spot_R, i);
     }
   }
 }
@@ -415,8 +485,8 @@ int main(int argc, char **argv)
   {
     int spot = atoi(argv[i]);
     int vert = atoi(argv[i+1]);
-    Stack *newStack = use(spot, vert, stack);
-    if ( newStack == NULL)
+    int *orbits_added = use(spot, vert, stack);
+    if ( orbits_added == NULL)
     {
       int grp = group(vert);
       int ind = index(vert);
@@ -427,12 +497,12 @@ int main(int argc, char **argv)
       return -1;
     }
     prealloc[spot] = true;
-    stack = newStack;
   }
   std::cout << "Forced allocations" << std::endl;
   print_forced(stack);
 
-  while (prealloc[++spot_R]) ; // Empty while loop to find next
+  if (prealloc[spot_R])
+    while (prealloc[++spot_R]) ; // Empty while loop to find next
                                 // not-preallocated vertex
   //std::cout << "Starting at " << spot_R << std::endl;
   fill(spot_R, stack);
