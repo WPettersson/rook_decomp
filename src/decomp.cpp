@@ -2,6 +2,8 @@
 
 #include <algorithm> // std::copy
 #include <iostream>
+#include <ios>
+#include <fstream>
 #include <iomanip>  // std::setw
 #include <cstdlib> // atoi(), exit()
 #include <ctime> // clock()
@@ -28,6 +30,13 @@ bool first; // Is this the first time we're printing the progress (in which
 enum style_t { ROOK, SHRIKHANDE };
 
 style_t style;
+
+
+int *up_to;
+bool skipping;
+bool logging;
+char *log_fname;
+const int MAX_LOG_LINE_LENGTH = 80;
 
 time_t last_progress;
 const time_t progress_interval = 30*60*CLOCKS_PER_SEC; // Only print progress every "progress_interval"
@@ -93,6 +102,31 @@ void print_forced(Stack *stack)
   std::cout << std::endl;
 }
 
+void load_log()
+{
+  char line[MAX_LOG_LINE_LENGTH];
+  std::ifstream log(log_fname);
+  int i = 0;
+  while ( log.good() && i < k*k)
+  {
+    log.getline(line,MAX_LOG_LINE_LENGTH);
+    up_to[i++] = atoi(line);
+  }
+  // Only do the skipping if we read all the details
+  if (i == k*k)
+    skipping = true;
+  log.close();
+}
+
+void save_log()
+{
+  std::ofstream log(log_fname, std::ios_base::trunc);
+  for( int i = 0; i <  k*k; i++)
+  {
+    log << progress[i] << std::endl;
+  }
+  log.close();
+}
 
 void print_stack(Stack *stack)
 {
@@ -339,6 +373,8 @@ void fill(int spot_R, Stack *stack)
   {
     last_progress = clock();
     print_progress();
+    if (logging)
+      save_log();
   }
   progress[spot_R] = 0;
 #endif
@@ -348,6 +384,17 @@ void fill(int spot_R, Stack *stack)
   {
 #ifndef QUIET
     progress[spot_R]=i;
+    if (skipping)
+    {
+      if (progress[spot_R] < up_to[spot_R])
+      {
+        continue;
+      }
+      if (progress[spot_R] > up_to[spot_R])
+      {
+        skipping = false;
+      }
+    }
 #endif
     if (stack->vertices_used[i])
       continue;
@@ -362,6 +409,7 @@ void fill(int spot_R, Stack *stack)
       unUse(orbits_used, stack, spot_R, i);
     }
   }
+  progress[spot_R] = 0;
 }
 
 Stack* init()
@@ -456,6 +504,8 @@ int main(int argc, char **argv)
   }
   k = atoi(argv[1]);
   style = ROOK;
+  skipping = false;
+  logging = false;
   count = -1; // -1 indicates that we should exit on finding one.
 
   while ((arg_counter < argc) && (argv[arg_counter][0] == '-'))
@@ -468,12 +518,23 @@ int main(int argc, char **argv)
     {
       style = SHRIKHANDE;
     }
+    if ( strcmp("-l", argv[arg_counter])==0)
+    {
+      arg_counter++;
+      up_to = new int[k*k];
+      // Load log file
+      log_fname = argv[arg_counter];
+      load_log();
+      logging = true;
+    }
     arg_counter++;
   }
 
 #ifndef QUIET
   first = true;
   progress = new int[k*k];
+  for(int i=0; i < k*k; i++)
+    progress[i] = 0;
 #endif
   prealloc = new bool[k*k];
   for (int i = 0; i < k*k; i++)
