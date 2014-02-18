@@ -36,10 +36,14 @@ int *up_to;
 bool skipping;
 bool logging;
 char *log_fname;
+char *perm_file_fname;
 const int MAX_LOG_LINE_LENGTH = 80;
+const int MAX_PERM_LINE_LENGTH = 500; // Probably overkill
 
 time_t last_progress;
 const time_t progress_interval = 30*60*CLOCKS_PER_SEC; // Only print progress every "progress_interval"
+
+int **permutations;
 
 inline int group(int i)
 {
@@ -49,6 +53,58 @@ inline int group(int i)
 inline int index(int i)
 {
   return ( (i % grp_size == 0) ? grp_size: i % grp_size);
+}
+
+void print_permutations()
+{
+  for( int i=0; i < k*k; i++)
+  {
+    for( int j = 0; j < k*k; j++)
+      std::cout << permutations[i][j] << " ";
+    std::cout << std::endl;
+  }
+}
+
+
+void new_blank_permutations()
+{
+  permutations = new int*[k*k];
+  for(int i=0; i< k*k; i++)
+  {
+    permutations[i] = new int[k*k];
+    for(int j=0; j < k*k; j++)
+      permutations[i][j] = j;
+  }
+}
+
+void load_permutations()
+{
+  permutations = new int*[k*k];
+  char line[MAX_PERM_LINE_LENGTH];
+  std::ifstream perm_file(perm_file_fname);
+  int i = 0;
+  while ( perm_file.good() && i < k*k)
+  {
+    perm_file.getline(line,MAX_PERM_LINE_LENGTH);
+    char *p = line;
+    permutations[i] = new int[k*k];
+    int j = 0;
+    while (*p != '\0')
+    {
+      int val = 0;
+      while (*p >= '0' && *p <= '9')
+      {
+        val = 10*val + (*p - '0');
+        p++;
+      }
+      permutations[i][j] = val;
+      while (!(*p >= '0' && *p <= '9') && *p != '\0')
+        p++;
+      j++;
+    }
+    i++;
+  }
+  perm_file.close();
 }
 
 void print_progress()
@@ -368,6 +424,7 @@ void unUse(int* orbits_added, Stack *s, int spot_R, int vert_K)
 void fill(int spot_R, Stack *stack)
 {
   int *orbits_used;
+  int vert;
 #ifndef QUIET
   if (clock() - last_progress > progress_interval)
   {
@@ -396,9 +453,10 @@ void fill(int spot_R, Stack *stack)
       }
     }
 #endif
-    if (stack->vertices_used[i])
+    vert = permutations[spot_R][i];
+    if (stack->vertices_used[vert])
       continue;
-    orbits_used = use(spot_R, i, stack);
+    orbits_used = use(spot_R, vert, stack);
     if (orbits_used != NULL)
     {
       //std::cout << "Put " << group(i) << "," << index(i) << " into " << spot_R << std::endl;
@@ -406,7 +464,7 @@ void fill(int spot_R, Stack *stack)
       while (prealloc[newSpot])
         newSpot++; // While loop to find next not-preallocated vertex
       fill(newSpot, stack);
-      unUse(orbits_used, stack, spot_R, i);
+      unUse(orbits_used, stack, spot_R, vert);
     }
   }
   progress[spot_R] = 0;
@@ -506,6 +564,7 @@ int main(int argc, char **argv)
   style = ROOK;
   skipping = false;
   logging = false;
+  permutations = 0;
   count = -1; // -1 indicates that we should exit on finding one.
 
   while ((arg_counter < argc) && (argv[arg_counter][0] == '-'))
@@ -527,8 +586,16 @@ int main(int argc, char **argv)
       load_log();
       logging = true;
     }
+    if ( strcmp("-p", argv[arg_counter])==0)
+    {
+      arg_counter++;
+      perm_file_fname = argv[arg_counter];
+      load_permutations();
+    }
     arg_counter++;
   }
+  if (permutations == 0)
+     new_blank_permutations();
 
 #ifndef QUIET
   first = true;
