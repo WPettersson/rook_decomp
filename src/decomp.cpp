@@ -560,6 +560,7 @@ int main(int argc, char **argv)
     std::cout << " all such decompositions, and count them." << std::endl;
     return 0;
   }
+  bool test_only = false;
   k = atoi(argv[1]);
   style = ROOK;
   skipping = false;
@@ -572,6 +573,10 @@ int main(int argc, char **argv)
     if ( strcmp("-a", argv[arg_counter])==0)
     {
       count = 0;
+    }
+    if ( strcmp("-t", argv[arg_counter])==0)
+    {
+      test_only = true;
     }
     if ( strcmp("-s", argv[arg_counter])==0)
     {
@@ -633,6 +638,9 @@ int main(int argc, char **argv)
     while (prealloc[++spot_R]) ; // Empty while loop to find next
                                 // not-preallocated vertex
   //std::cout << "Starting at " << spot_R << std::endl;
+  if (test_only)
+    return 0;
+
   fill(spot_R, stack);
 
   if (count > 1)
