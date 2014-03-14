@@ -4,8 +4,7 @@ rook_decomp
 Software to find decompositions of 2 K_n,n into copies of the rook graph R_n
 
 
-Currently this software only really works for n=6, as it's in progress.
-
+The process is explained for the example whre n=6.
 K_n,n has 36 vertices.  Label these infinity, (1,1), (1,2), ..., (1,7), (2,1), ..., (5,7).
 
 Place infinity to one side, and group the remaining vertices into 5 groups such that group X contains vertices of the form (X,Y) for Y in {1,...,7}.
