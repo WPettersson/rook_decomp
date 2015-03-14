@@ -435,8 +435,10 @@ void fill(int spot_R, Stack *stack)
   }
   progress[spot_R] = 0;
 #endif
-  if (spot_R == k*k)
+  if (spot_R == k*k) {
     finish(stack);
+    return;
+  }
   for (int i = 0; i < k*k; i++)
   {
 #ifndef QUIET
