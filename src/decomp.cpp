@@ -469,7 +469,9 @@ void fill(int spot_R, Stack *stack)
       unUse(orbits_used, stack, spot_R, vert);
     }
   }
+#ifndef QUIET
   progress[spot_R] = 0;
+#endif
 }
 
 Stack* init()
